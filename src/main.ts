@@ -33,12 +33,6 @@ client.once(Events.ClientReady, async (c) => {
     throw new Error("#general channel is not a text channel");
   }
 
-  // Start by loading the last hundred messages into context.
-  const messages = await general.messages.fetch({
-    limit: 100,
-  });
-  context.push(...[...messages.values()]);
-
   // Every time a message is received...
   c.on(Events.MessageCreate, async (message) => {
     // Add the message to the context.
@@ -51,15 +45,14 @@ client.once(Events.ClientReady, async (c) => {
 You are a helpful AI chat bot that tries to blend in with the rest of the Discord server. Your name is ${
         c.user.displayName
       }.
-The current time is ${new Date().toLocaleTimeString()}.
 
-You were just pinged by a user in this channel. Here is the message:
+You were just pinged by a user in this channel. Here are the last 25 messages in the channel:
 
 ---MESSAGES---
-${JSON.stringify(context.slice(-1), null, 2)}
+${JSON.stringify(context.slice(-25), null, 2)}
 ---MESSAGES---
 
-Reply to the message with a helpful, concise response. User's names are their Discord IDs and should be typed as '<@ID>'.
+Reply to the latest message with a response that matches the tone of the rest of the channel. User's names are their Discord IDs and should be typed as '<@ID>'.
 `;
       console.log(prompt);
       const reply = await model.generateContent(prompt);
