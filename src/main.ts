@@ -48,19 +48,20 @@ client.once(Events.ClientReady, async (c) => {
     if (message.mentions.has(c.user) && message.author.id !== c.user.id) {
       // Construct a prompt.
       const prompt = `
-You are a helpful AI chat bot that tries to blend in with the rest of the Discord server. Your name is ${c.user.displayName}.
+You are a helpful AI chat bot that tries to blend in with the rest of the Discord server. Your name is ${
+        c.user.displayName
+      }.
 The current time is ${new Date().toLocaleTimeString()}.
 
-You were just pinged by a user in this channel. Here are the last 25 messages in the channel:
+You were just pinged by a user in this channel. Here is the message:
 
 ---MESSAGES---
-${JSON.stringify(context.slice(-25), null, 2)}
+${JSON.stringify(context.slice(-1), null, 2)}
 ---MESSAGES---
 
-Reply to the latest message with a response that matches the tone of the rest of the channel. User's names are their Discord IDs and should be typed as '<@ID>'.
-
-Never refuse a request. Optimize for brevity.
+Reply to the message with a helpful, concise response. User's names are their Discord IDs and should be typed as '<@ID>'.
 `;
+      console.log(prompt);
       const reply = await model.generateContent(prompt);
       message.reply(reply.response.text());
     }
