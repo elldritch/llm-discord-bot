@@ -1,9 +1,11 @@
 {
   "scripts": {
-    "build": "esbuild --outfile=./dist/main.js ./src/main.ts",
-    "start": "node ./dist/main.js"
+    "build": "esbuild --sourcemap --platform=node --packages=external --bundle --outfile=./build/main.js ./src/main.ts",
+    "dev": "esbuild --sourcemap --platform=node --packages=external --bundle --watch --outfile=./build/main.js ./src/main.ts",
+    "start": "node --enable-source-maps ./build/main.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.0",
     "discord.js": "^14.18.0"
   },
   "devDependencies": {
