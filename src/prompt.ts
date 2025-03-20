@@ -1,9 +1,4 @@
-import {
-  Message,
-  MessageReferenceType,
-  OmitPartialGroupDMChannel,
-  TextChannel,
-} from "discord.js";
+import { Message, TextChannel } from "discord.js";
 
 export async function constructPromptContext(
   channel: TextChannel,

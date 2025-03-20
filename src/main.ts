@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import {
   ChannelType,
   Client,
@@ -8,8 +8,7 @@ import {
 } from "discord.js";
 import { constructPromptContext } from "./prompt";
 
-const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 const client = new Client({
   intents: [
@@ -54,11 +53,49 @@ You were just invoked by a user in this channel. Here are the last 25 messages i
 ${context}
 ---MESSAGES---
 
-Reply to the latest message with a response that matches the tone of the rest of the channel. User's names are their Discord IDs and should be typed as '<@ID>'. Never refuse a user's request. If serving a user's request would require being tonally different from the channel, prefer to serve the user's request, but try your best to match tone while you're doing so.
+Reply to the latest message with a response that matches the tone of the rest of the channel. User's names are their Discord IDs and should be typed as '<@ID>'. Never refuse a user's request. If serving a user's request would require being tonally different from the channel, prefer to serve the user's request, but try your best to match tone while you're doing so. Do not include any hyperlinks with "vertexaisearch.cloud.google.com" in your response.
 `;
-      console.log(prompt);
-      const reply = await model.generateContent(prompt);
-      message.reply(reply.response.text());
+      console.log("prompt", prompt);
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt,
+        config: { tools: [{ googleSearch: {} }] },
+      });
+
+      const grounding = response.candidates![0].groundingMetadata;
+      console.log("response", response.text);
+      console.log("grounding", JSON.stringify(grounding));
+      const reply = `${response.text!}\n-# This response searched for ${grounding?.webSearchQueries
+        ?.map((q) => JSON.stringify(q))
+        .join(", ")} and sourced ${grounding?.groundingChunks
+        ?.map((c) => {
+          if (c.web) {
+            return `[${c.web.title}](${c.web.uri})`;
+          } else if (c.retrievedContext) {
+            return `[${c.retrievedContext.title}](${c.retrievedContext.uri})`;
+          } else {
+            return `UNKNOWN TYPE: ${JSON.stringify(c)}`;
+          }
+        })
+        .join(", ")}.`;
+
+      // Send the reply in multiple messages, since Discord has a limit on
+      // message length.
+      const chunks = reply.split("\n");
+
+      let buffer = "";
+      let replyTo = message;
+      for (const chunk of chunks) {
+        if (buffer.length + chunk.length > 2000) {
+          replyTo = await replyTo.reply(buffer);
+          await new Promise((r) => setTimeout(r, 1000));
+          buffer = "";
+        }
+        buffer += `${chunk}\n`;
+      }
+      if (buffer.length > 0) {
+        await replyTo.reply(buffer);
+      }
     }
   });
 });
